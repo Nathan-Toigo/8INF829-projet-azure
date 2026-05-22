@@ -37,26 +37,36 @@ def run_ingest(
 
     t_ingest = time.perf_counter()
     chunks = chunk_documents(docs, method=method, chunk_size=size, chunk_overlap=overlap)
-    print(f"Loaded {len(docs)} documents -> {len(chunks)} chunks ({method})")
+    print(f"    Loaded {len(docs)} documents -> {len(chunks)} chunks ({method})", flush=True)
+    if chunks:
+        lens = [len(c.content) for c in chunks]
+        print(
+            f"    Chunk sizes (chars): min={min(lens)} max={max(lens)} "
+            f"avg={sum(lens) // len(lens)}",
+            flush=True,
+        )
 
     if clear:
         clear_collection(coll)
 
     embeddings: list[list[float]] = []
     batch_size = 16
+    n_batches = (len(chunks) + batch_size - 1) // batch_size
     t0 = time.perf_counter()
-    for i in range(0, len(chunks), batch_size):
+    for bi, i in enumerate(range(0, len(chunks), batch_size), start=1):
         batch = chunks[i : i + batch_size]
         texts = [c.content for c in batch]
         embeddings.extend(embed_texts(texts, model=emb))
+        if n_batches > 1 and (bi == 1 or bi == n_batches or bi % 4 == 0):
+            print(f"    Embed batch {bi}/{n_batches}...", flush=True)
     embed_sec = time.perf_counter() - t0
-    print(f"Embedded with '{emb}' in {embed_sec:.2f}s")
+    print(f"    Embedded with '{emb}' in {embed_sec:.2f}s", flush=True)
 
     collection = get_collection(collection_name=coll)
     add_chunks(collection, chunks, embeddings)
     count = collection.count()
     ingest_sec = time.perf_counter() - t_ingest
-    print(f"Stored {count} vectors in collection '{coll}'")
+    print(f"    Stored {count} vectors in '{coll}'", flush=True)
     return {
         "documents": len(docs),
         "chunks": len(chunks),

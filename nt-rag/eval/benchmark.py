@@ -13,6 +13,15 @@ from typing import Any
 import yaml
 
 import config
+from eval.display import (
+    log_banner,
+    log_done,
+    log_experiment_summary,
+    log_judge_scores,
+    log_question_summary,
+    log_step,
+    log_warn,
+)
 from eval.full_chart import answer_with_full_documents
 from eval.hardware import capture_hardware_snapshot
 from eval.judge import judge_rag_vs_full, judge_vs_golden
@@ -46,6 +55,12 @@ def _flatten_question_row(
     ingest_metrics: dict[str, Any],
 ) -> dict[str, Any]:
     m = rag.get("metrics", {})
+    retrieved = rag.get("retrieved_chunks") or []
+    distances = [
+        c["distance"]
+        for c in retrieved
+        if isinstance(c.get("distance"), (int, float))
+    ]
     row: dict[str, Any] = {
         "experiment_id": experiment["id"],
         "question_id": question["id"],
@@ -61,7 +76,12 @@ def _flatten_question_row(
         "chat_ms": m.get("chat_ms"),
         "total_question_sec": round(m.get("total_ms", 0) / 1000, 3),
         "ingest_total_sec": ingest_metrics.get("ingest_total_sec"),
+        "retrieved_count": m.get("retrieved_count", len(retrieved)),
+        "context_chars": m.get("context_chars"),
     }
+    if distances:
+        row["top1_distance"] = round(distances[0], 4)
+        row["avg_retrieve_distance"] = round(sum(distances) / len(distances), 4)
     if full:
         row["full_chart_answer"] = full.get("answer")
         row["full_chart_sec"] = full.get("metrics", {}).get("full_chart_sec")
@@ -78,6 +98,10 @@ def _flatten_question_row(
         row["has_golden"] = True
     else:
         row["has_golden"] = False
+    if full and full.get("error"):
+        row["full_chart_error"] = full["error"]
+    if judge_full and judge_full.get("error"):
+        row["judge_error"] = judge_full["error"]
     return row
 
 
@@ -93,6 +117,7 @@ def run_benchmark(
     host_profile = bench.get("host_profile", "default")
     run_full = bench.get("run_full_chart", True)
     run_judge = bench.get("run_judge", True)
+    max_full_chars = bench.get("max_full_doc_chars", config.MAX_FULL_DOC_CHARS)
 
     questions_path = RAG_ROOT / bench.get("questions", "eval/questions.json")
     golden_path = RAG_ROOT / bench.get("golden_answers", "eval/golden_answers.json")
@@ -122,6 +147,16 @@ def run_benchmark(
     all_rows: list[dict[str, Any]] = []
     summaries: list[dict[str, Any]] = []
 
+    log_banner("RAG benchmark")
+    print(f"  Output: {out_dir}", flush=True)
+    print(f"  Experiments: {len(experiments)}", flush=True)
+    print(f"  Questions: {len(questions)} ({', '.join(q['id'] for q in questions)})", flush=True)
+    print(
+        f"  Flags: full_chart={run_full} judge={run_judge} "
+        f"max_full_doc_chars={max_full_chars} skip_ingest={skip_ingest}",
+        flush=True,
+    )
+
     for exp in experiments:
         exp_id = exp["id"]
         chunk_method = exp.get("chunk_method", "fixed_chars")
@@ -129,8 +164,15 @@ def run_benchmark(
         chat_model = exp.get("chat_model", config.OLLAMA_CHAT_MODEL)
         coll = config.collection_name_for(chunk_method, embed_model)
 
-        print(f"\n=== Experiment: {exp_id} ===")
+        log_banner(f"Experiment: {exp_id}")
+        print(
+            f"  chunk={chunk_method} embed={embed_model} chat={chat_model} "
+            f"collection={coll}",
+            flush=True,
+        )
+        log_step("check Ollama models")
         check_ollama(embed_model=embed_model, chat_model=chat_model)
+        log_done("Ollama OK")
 
         if skip_ingest:
             ingest_metrics = {
@@ -138,7 +180,9 @@ def run_benchmark(
                 "chunk_method": chunk_method,
                 "embed_model": embed_model,
             }
+            log_step("ingest", "skipped (--skip-ingest)")
         else:
+            log_step("ingest", f"method={chunk_method}")
             ingest_metrics = run_ingest(
                 clear=True,
                 chunk_method=chunk_method,
@@ -147,19 +191,34 @@ def run_benchmark(
                 embed_model=embed_model,
                 collection_name=coll,
             )
+            log_done(
+                "ingest",
+                ingest_metrics.get("ingest_total_sec"),
+                f"{ingest_metrics.get('chunks')} chunks -> {coll}",
+            )
 
         exp_rows: list[dict[str, Any]] = []
-        for q in questions:
+        for qi, q in enumerate(questions, start=1):
             qid = q["id"]
             qtext = q["question"]
-            print(f"  Question {qid}...")
+            print(f"\n  --- Question {qi}/{len(questions)}: {qid} ---", flush=True)
+            qpreview = qtext[:70] + ("..." if len(qtext) > 70 else "")
+            print(f"      {qpreview}", flush=True)
 
+            log_step("RAG answer")
             rag = ask_with_metrics(
                 qtext,
                 top_k=exp.get("top_k", config.TOP_K),
                 collection_name=coll,
                 embed_model=embed_model,
                 chat_model=chat_model,
+                verbose=True,
+            )
+            ans = rag.get("answer") or ""
+            log_done(
+                "RAG",
+                rag.get("metrics", {}).get("total_ms", 0) / 1000,
+                f"answer {len(ans)} chars",
             )
 
             full_result = None
@@ -167,29 +226,63 @@ def run_benchmark(
             judge_golden_result = None
 
             if run_full:
-                full_result = answer_with_full_documents(qtext, chat_model=chat_model)
+                log_step("full-chart baseline")
+                try:
+                    full_result = answer_with_full_documents(
+                        qtext,
+                        chat_model=chat_model,
+                        max_chars=max_full_chars,
+                        verbose=True,
+                    )
+                    fc_sec = full_result.get("metrics", {}).get("full_chart_sec")
+                    fc_ans = full_result.get("answer") or ""
+                    log_done("full-chart", fc_sec, f"answer {len(fc_ans)} chars")
+                except Exception as e:
+                    log_warn(f"full-chart failed: {e}")
+                    full_result = {"error": str(e), "answer": None}
 
-            if run_judge and full_result:
-                judge_full_result = judge_rag_vs_full(
-                    qtext,
-                    rag["answer"],
-                    full_result["answer"],
-                    rag["rag_context"],
-                    judge_model=exp.get("judge_model"),
-                )
+            if run_judge and full_result and full_result.get("answer"):
+                log_step("judge", "RAG vs full-chart")
+                try:
+                    judge_full_result = judge_rag_vs_full(
+                        qtext,
+                        rag["answer"],
+                        full_result["answer"],
+                        rag["rag_context"],
+                        judge_model=exp.get("judge_model"),
+                    )
+                    jsec = judge_full_result.get("metrics", {}).get("judge_sec")
+                    log_done("judge vs full", jsec)
+                    log_judge_scores(judge_full_result.get("scores", {}), prefix="vs full-chart")
+                except Exception as e:
+                    log_warn(f"judge vs full failed: {e}")
+                    judge_full_result = {"error": str(e), "scores": {}}
+            elif run_judge and run_full:
+                log_warn("judge vs full-chart skipped (no full-chart answer)")
 
             if run_judge and qid in golden:
-                judge_golden_result = judge_vs_golden(
-                    qtext,
-                    rag["answer"],
-                    golden[qid]["answer"],
-                    rag["rag_context"],
-                    judge_model=exp.get("judge_model"),
-                )
+                log_step("judge", f"RAG vs golden ({qid})")
+                try:
+                    judge_golden_result = judge_vs_golden(
+                        qtext,
+                        rag["answer"],
+                        golden[qid]["answer"],
+                        rag["rag_context"],
+                        judge_model=exp.get("judge_model"),
+                    )
+                    jsec = judge_golden_result.get("metrics", {}).get("judge_sec")
+                    log_done("judge vs golden", jsec)
+                    log_judge_scores(
+                        judge_golden_result.get("scores", {}), prefix="vs golden"
+                    )
+                except Exception as e:
+                    log_warn(f"judge vs golden failed: {e}")
+                    judge_golden_result = {"error": str(e), "scores": {}}
 
             row = _flatten_question_row(
                 exp, q, rag, full_result, judge_full_result, judge_golden_result, ingest_metrics
             )
+            log_question_summary(row)
             exp_rows.append(row)
             all_rows.append(row)
 
@@ -200,11 +293,16 @@ def run_benchmark(
         summary["embed_model"] = embed_model
         summary["host_profile"] = host_profile
         summaries.append(summary)
+        log_experiment_summary(summary)
 
     write_jsonl(out_dir / "details.jsonl", all_rows)
     write_summary_csv(out_dir / "summary.csv", summaries)
     write_report_md(out_dir / "report.md", summaries, hw)
-    print(f"\nResults written to {out_dir}")
+    log_banner("Benchmark complete")
+    print(f"  Results: {out_dir}", flush=True)
+    print(f"    details.jsonl  ({len(all_rows)} rows)", flush=True)
+    print(f"    summary.csv    ({len(summaries)} experiments)", flush=True)
+    print(f"    report.md", flush=True)
     return out_dir
 
 

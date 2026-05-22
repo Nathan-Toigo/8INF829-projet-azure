@@ -23,12 +23,18 @@ OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "llama3.2")
 OLLAMA_JUDGE_MODEL = os.getenv("OLLAMA_JUDGE_MODEL", OLLAMA_CHAT_MODEL)
 OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "300"))
+# Longer read timeout for full-chart / judge (large prompts)
+OLLAMA_CHAT_TIMEOUT = float(os.getenv("OLLAMA_CHAT_TIMEOUT", "600"))
+OLLAMA_CHAT_RETRIES = int(os.getenv("OLLAMA_CHAT_RETRIES", "2"))
 OLLAMA_GPU_MODE = os.getenv("OLLAMA_GPU_MODE", "auto")
 
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1200"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
 TOP_K = int(os.getenv("TOP_K", "5"))
-MAX_FULL_DOC_CHARS = int(os.getenv("MAX_FULL_DOC_CHARS", "120000"))
+# nomic-embed-text context is limited; longer chunks cause Ollama /api/embed 400
+EMBED_MAX_CHARS = int(os.getenv("EMBED_MAX_CHARS", "6000"))
+# Full-chart sends all docs in one prompt; too large can crash Ollama (connection reset)
+MAX_FULL_DOC_CHARS = int(os.getenv("MAX_FULL_DOC_CHARS", "60000"))
 
 
 def normalize_model_for_collection(model: str) -> str:

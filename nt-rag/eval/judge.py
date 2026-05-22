@@ -50,6 +50,7 @@ def judge_rag_vs_full(
         ],
         model=model,
         temperature=0.1,
+        timeout=config.OLLAMA_CHAT_TIMEOUT,
     )
     judge_sec = time.perf_counter() - t0
     scores = _parse_json_from_llm(raw)
@@ -83,6 +84,7 @@ def judge_vs_golden(
         ],
         model=model,
         temperature=0.1,
+        timeout=config.OLLAMA_CHAT_TIMEOUT,
     )
     judge_sec = time.perf_counter() - t0
     scores = _parse_json_from_llm(raw)

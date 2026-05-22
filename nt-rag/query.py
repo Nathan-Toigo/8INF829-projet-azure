@@ -40,6 +40,7 @@ def ask_with_metrics(
     collection_name: str | None = None,
     embed_model: str | None = None,
     chat_model: str | None = None,
+    verbose: bool = False,
 ) -> dict[str, Any]:
     k = top_k or config.TOP_K
     coll = collection_name or config.COLLECTION_NAME
@@ -52,13 +53,20 @@ def ask_with_metrics(
             f"Vector store '{coll}' is empty. Run ingest for this collection first."
         )
 
+    if verbose:
+        print(f"      RAG: collection={coll} top_k={k} embed={emb} chat={chat}", flush=True)
+
     t0 = time.perf_counter()
     query_emb = embed_texts([question], model=emb)[0]
     query_embed_ms = (time.perf_counter() - t0) * 1000
+    if verbose:
+        print(f"      embed question: {query_embed_ms:.0f} ms", flush=True)
 
     t1 = time.perf_counter()
     results = query_collection(collection, query_emb, k)
     retrieve_ms = (time.perf_counter() - t1) * 1000
+    if verbose:
+        print(f"      chroma retrieve: {retrieve_ms:.0f} ms", flush=True)
 
     context = format_context(results)
     metas = results.get("metadatas") or [[]]
@@ -93,6 +101,17 @@ def ask_with_metrics(
         model=chat,
     )
     chat_ms = (time.perf_counter() - t2) * 1000
+    total_ms = query_embed_ms + retrieve_ms + chat_ms
+
+    if verbose:
+        ctx_chars = len(context)
+        print(f"      context: {ctx_chars:,} chars from {len(retrieved)} chunk(s)", flush=True)
+        print(f"      chat answer: {chat_ms:.0f} ms", flush=True)
+        print(f"      RAG total: {total_ms / 1000:.2f} s", flush=True)
+        if retrieved:
+            from eval.display import log_retrieval
+
+            log_retrieval(retrieved, top_k=k)
 
     return {
         "question": question,
@@ -106,7 +125,9 @@ def ask_with_metrics(
             "query_embed_ms": round(query_embed_ms, 2),
             "retrieve_ms": round(retrieve_ms, 2),
             "chat_ms": round(chat_ms, 2),
-            "total_ms": round(query_embed_ms + retrieve_ms + chat_ms, 2),
+            "total_ms": round(total_ms, 2),
+            "context_chars": len(context),
+            "retrieved_count": len(retrieved),
         },
     }
 

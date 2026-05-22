@@ -49,15 +49,15 @@ def write_report_md(
         "",
         "## Experiment summaries",
         "",
-        "| Experiment | Chunk | Chat model | Avg total (s) | Avg accuracy | Avg quality | Avg global |",
-        "|------------|-------|------------|---------------|--------------|-------------|------------|",
+        "| Experiment | Chunk | Avg RAG (s) | Avg top1 dist | Avg accuracy | Avg golden |",
+        "|------------|-------|-------------|---------------|--------------|------------|",
     ]
     for s in summaries:
         lines.append(
             f"| {s.get('experiment_id', '')} | {s.get('chunk_method', '')} | "
-            f"{s.get('chat_model', '')} | {s.get('avg_total_question_sec', '')} | "
-            f"{s.get('avg_accuracy_score', '')} | {s.get('avg_quality_score', '')} | "
-            f"{s.get('avg_global_accuracy_score', '')} |"
+            f"{s.get('avg_total_question_sec', '')} | {s.get('avg_top1_distance', '')} | "
+            f"{s.get('avg_global_accuracy_score', '')} | "
+            f"{s.get('avg_golden_match_score', '')} |"
         )
     lines.append("")
     path.parent.mkdir(parents=True, exist_ok=True)

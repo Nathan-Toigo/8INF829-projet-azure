@@ -1,6 +1,6 @@
 {
   "default_subset": [
-    "q21", "q33", "q47", "q49", "q55", "q56", "q09", "q13", "q25", "q37"
+    "q56"
   ],
   "questions": [
     {"id": "q09", "question": "Quelle etait l'interpretation du prelevement par ponction a l'aiguille fine du ganglion cervical gauche ?", "tags": ["fna_pathology"]},

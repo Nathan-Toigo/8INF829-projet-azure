@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+import config
 from documents import LoadedDocument
 
 CHUNK_METHODS = ("fixed_chars", "paragraph", "page", "words_250")
@@ -96,13 +97,29 @@ def chunk_paragraph(doc: LoadedDocument) -> list[TextChunk]:
     return chunks
 
 
-def chunk_page(doc: LoadedDocument) -> list[TextChunk]:
+def chunk_page(
+    doc: LoadedDocument,
+    *,
+    max_page_chars: int | None = None,
+    page_overlap: int | None = None,
+) -> list[TextChunk]:
+    """One chunk per PDF page; oversized pages are split to fit embed context."""
+    limit = max_page_chars if max_page_chars is not None else config.EMBED_MAX_CHARS
+    overlap = page_overlap if page_overlap is not None else min(config.CHUNK_OVERLAP, limit // 5)
     chunks: list[TextChunk] = []
+    idx = 0
     for page_idx, page_text in enumerate(doc.pages):
         page_text = page_text.strip()
         if len(page_text) < 30:
             continue
-        chunks.append(_make_chunk(doc, "page", page_idx, page_text, page_idx))
+        parts = (
+            [page_text]
+            if len(page_text) <= limit
+            else _split_text(page_text, limit, overlap)
+        )
+        for part in parts:
+            chunks.append(_make_chunk(doc, "page", idx, part, page_idx))
+            idx += 1
     return chunks
 
 

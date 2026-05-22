@@ -4,6 +4,8 @@ questions: eval/questions.json
 golden_answers: eval/golden_answers.json
 run_full_chart: true
 run_judge: true
+# Cap corpus size for full-chart (large values can crash Ollama -> connection reset)
+max_full_doc_chars: 40000
 
 experiments:
   - id: fixed_chars_llama32
@@ -20,8 +22,9 @@ experiments:
     embed_model: nomic-embed-text
     top_k: 5
 
-  - id: page_llama32
-    chunk_method: page
-    chat_model: llama3.2
-    embed_model: nomic-embed-text
-    top_k: 5
+  # page: full PDF pages can exceed embed context -> 400 on /api/embed (see EMBED_MAX_CHARS)
+  # - id: page_llama32
+  #   chunk_method: page
+  #   chat_model: llama3.2
+  #   embed_model: nomic-embed-text
+  #   top_k: 5

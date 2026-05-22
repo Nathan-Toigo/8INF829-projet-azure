@@ -1,4 +1,4 @@
-# RAG ó Ollama local over `docs/`
+# RAG ù Ollama local over `docs/`
 
 Build a retrieval-augmented index from PDF/DOCX files in the repository `docs/` folder, then ask questions with **Ollama** running locally in **Docker** (embeddings + chat). No Azure account required.
 
@@ -6,7 +6,7 @@ Build a retrieval-augmented index from PDF/DOCX files in the repository `docs/` 
 
 - Python 3.11+
 - [Docker Desktop](https://docs.docker.com/get-docker/) (WSL2 backend on Windows)
-- ~4ñ8 GB disk for models (depends on chat model choice)
+- ~4ù8 GB disk for models (depends on chat model choice)
 - **Optional (GPU):** NVIDIA GPU, recent drivers, GPU support enabled in Docker Desktop
 
 ## Quick start
@@ -129,6 +129,7 @@ python run.py eval --only fixed_chars_llama32
 | Category | Metrics |
 |----------|---------|
 | **Latency** | `ingest_total_sec`, `query_embed_ms`, `retrieve_ms`, `chat_ms`, `full_chart_sec`, `judge_sec` |
+| **Retrieval** | `top1_distance`, `avg_retrieve_distance` (cosine, lower = closer), `retrieved_count`, `context_chars` |
 | **Quality (judge)** | `accuracy_score`, `quality_score`, `thoroughness_score`, `global_accuracy_score` vs full-chart answer |
 | **Golden (optional)** | `golden_match_score` when question id exists in `eval/golden_answers.json` |
 
@@ -152,6 +153,8 @@ Results under `nt-rag/results/<timestamp>/`:
 - `report.md` - readable table
 
 Set `run_full_chart: false` or `run_judge: false` in YAML for faster smoke tests.
+
+Lower `max_full_doc_chars` in `experiments/benchmark.yaml` (default `60000`) if full-chart fails with a connection reset.
 
 Compare runs on different PCs by setting `host_profile` in the YAML.
 
@@ -183,3 +186,5 @@ nt-rag/
 | Missing model | `docker compose exec ollama ollama pull <model>` |
 | Slow ingest / chat | Enable GPU; or use `llama3.2:3b` |
 | Empty / bad answers | Re-ingest; try a larger chat model |
+| `httpx.ReadError` / WinError 10054 during eval | Ollama closed the socket (often OOM or prompt too large). Lower `MAX_FULL_DOC_CHARS` / `max_full_doc_chars`; check `docker logs rag_ollama`; retries are automatic (`OLLAMA_CHAT_RETRIES`) |
+| `400 Bad Request` on `/api/embed` during ingest | Chunk text too long for `nomic-embed-text` (common with `chunk_method: page`). Fixed by `EMBED_MAX_CHARS` truncation + page split in `chunking.py`; or disable the `page` experiment in `benchmark.yaml` |

@@ -39,6 +39,8 @@ def aggregate_experiment_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "avg_total_question_sec": avg("total_question_sec"),
         "avg_full_chart_sec": avg("full_chart_sec"),
         "avg_judge_sec": avg("judge_sec"),
+        "avg_top1_distance": avg("top1_distance"),
+        "avg_retrieve_distance": avg("avg_retrieve_distance"),
     }
     for sk in score_keys:
         out[f"avg_{sk}"] = avg(sk)
