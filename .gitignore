@@ -52,4 +52,6 @@ terraform.rc
 nt-rag/.env
 nt-rag/.venv/
 nt-rag/data/
+nt-rag/results/
 nt-rag/__pycache__/
+nt-rag/eval/__pycache__/

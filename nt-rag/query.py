@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -31,20 +33,52 @@ def format_context(query_result: dict) -> str:
     return "\n\n---\n\n".join(blocks)
 
 
-def ask(question: str, *, top_k: int | None = None) -> str:
+def ask_with_metrics(
+    question: str,
+    *,
+    top_k: int | None = None,
+    collection_name: str | None = None,
+    embed_model: str | None = None,
+    chat_model: str | None = None,
+) -> dict[str, Any]:
     k = top_k or config.TOP_K
-    collection = get_collection()
+    coll = collection_name or config.COLLECTION_NAME
+    emb = embed_model or config.OLLAMA_EMBED_MODEL
+    chat = chat_model or config.OLLAMA_CHAT_MODEL
 
+    collection = get_collection(collection_name=coll)
     if collection.count() == 0:
         raise RuntimeError(
-            "Vector store is empty. Run: python run.py ingest"
+            f"Vector store '{coll}' is empty. Run ingest for this collection first."
         )
 
-    query_emb = embed_texts([question])[0]
-    results = query_collection(collection, query_emb, k)
-    context = format_context(results)
+    t0 = time.perf_counter()
+    query_emb = embed_texts([question], model=emb)[0]
+    query_embed_ms = (time.perf_counter() - t0) * 1000
 
-    return chat_completion(
+    t1 = time.perf_counter()
+    results = query_collection(collection, query_emb, k)
+    retrieve_ms = (time.perf_counter() - t1) * 1000
+
+    context = format_context(results)
+    metas = results.get("metadatas") or [[]]
+    retrieved = []
+    if metas and metas[0]:
+        docs = results.get("documents") or [[]]
+        dists = results.get("distances") or [[]]
+        for i, meta in enumerate(metas[0]):
+            retrieved.append(
+                {
+                    "source_file": meta.get("source_file"),
+                    "page_index": meta.get("page_index"),
+                    "chunk_method": meta.get("chunk_method"),
+                    "distance": dists[0][i] if dists and dists[0] else None,
+                    "preview": (docs[0][i][:200] + "...") if docs and docs[0] else "",
+                }
+            )
+
+    t2 = time.perf_counter()
+    answer = chat_completion(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -55,8 +89,31 @@ def ask(question: str, *, top_k: int | None = None) -> str:
                     "Answer based on the context above."
                 ),
             },
-        ]
+        ],
+        model=chat,
     )
+    chat_ms = (time.perf_counter() - t2) * 1000
+
+    return {
+        "question": question,
+        "answer": answer,
+        "rag_context": context,
+        "retrieved_chunks": retrieved,
+        "collection_name": coll,
+        "embed_model": emb,
+        "chat_model": chat,
+        "metrics": {
+            "query_embed_ms": round(query_embed_ms, 2),
+            "retrieve_ms": round(retrieve_ms, 2),
+            "chat_ms": round(chat_ms, 2),
+            "total_ms": round(query_embed_ms + retrieve_ms + chat_ms, 2),
+        },
+    }
+
+
+def ask(question: str, *, top_k: int | None = None) -> str:
+    coll = config.collection_name_for("fixed_chars", config.OLLAMA_EMBED_MODEL)
+    return ask_with_metrics(question, top_k=top_k, collection_name=coll)["answer"]
 
 
 if __name__ == "__main__":

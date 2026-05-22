@@ -2,7 +2,10 @@
 # docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 services:
   ollama:
-    gpus: all
+    # "gpus: all" fails on some Compose versions; use list form instead
+    gpus:
+      - count: all
+        capabilities: [gpu]
     environment:
       - OLLAMA_MAX_LOADED_MODELS=1
       - OLLAMA_FLASH_ATTENTION=1

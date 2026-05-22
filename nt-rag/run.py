@@ -33,7 +33,43 @@ def main() -> int:
         help="Re-run ingest before starting chat",
     )
 
+    eval_p = sub.add_parser("eval", help="Run benchmark experiments (see experiments/)")
+    eval_p.add_argument(
+        "--config",
+        type=Path,
+        default=Path("experiments/benchmark.yaml"),
+        help="Benchmark YAML config",
+    )
+    eval_p.add_argument("--only", dest="only_experiment", default=None)
+    eval_p.add_argument("--dry-run", action="store_true", help="One question only")
+    eval_p.add_argument("--all-questions", action="store_true")
+    eval_p.add_argument(
+        "--skip-ingest",
+        action="store_true",
+        help="Reuse existing Chroma collections",
+    )
+
     args = parser.parse_args()
+
+    if args.command == "eval":
+        from eval.benchmark import run_benchmark
+
+        if not config.DOCS_DIR.is_dir():
+            print(f"Docs folder not found: {config.DOCS_DIR}", file=sys.stderr)
+            return 1
+        try:
+            check_ollama()
+        except RuntimeError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
+        run_benchmark(
+            args.config,
+            only_experiment=args.only_experiment,
+            dry_run=args.dry_run,
+            all_questions=args.all_questions,
+            skip_ingest=args.skip_ingest,
+        )
+        return 0
 
     if not config.DOCS_DIR.is_dir():
         print(f"Docs folder not found: {config.DOCS_DIR}", file=sys.stderr)
@@ -57,9 +93,15 @@ def main() -> int:
     if args.command == "chat":
         if args.reingest:
             run_ingest(clear=True)
-        elif not (config.CHROMA_DIR / "chroma.sqlite3").exists():
-            print("No index found running ingest first...")
-            run_ingest(clear=True)
+        else:
+            coll = config.collection_name_for(
+                "fixed_chars", config.OLLAMA_EMBED_MODEL
+            )
+            from store import get_collection
+
+            if get_collection(collection_name=coll).count() == 0:
+                print("No index found - running ingest first...")
+                run_ingest(clear=True)
 
         print("RAG chat (empty line or 'quit' to exit)\n")
         while True:

@@ -107,23 +107,69 @@ After changing the embedding model, re-run `python run.py ingest`.
 | `python run.py ingest` | Load docs, chunk, embed, store in Chroma |
 | `python run.py ask "..."` | Single question |
 | `python run.py chat` | Interactive session (`quit` to exit) |
+| `python run.py eval` | Run benchmark matrix (see below) |
 
 Vector data: `nt-rag/data/chroma/` (gitignored).
+
+## Benchmark / evaluation pipeline
+
+Compare **chunking methods**, **chat models**, and **host profiles** with timing and LLM judge scores.
+
+### Quick run
+
+```bash
+pip install -r requirements.txt
+python run.py eval --config experiments/benchmark.yaml --dry-run
+python run.py eval --config experiments/benchmark.yaml
+python run.py eval --only fixed_chars_llama32
+```
+
+### What is measured
+
+| Category | Metrics |
+|----------|---------|
+| **Latency** | `ingest_total_sec`, `query_embed_ms`, `retrieve_ms`, `chat_ms`, `full_chart_sec`, `judge_sec` |
+| **Quality (judge)** | `accuracy_score`, `quality_score`, `thoroughness_score`, `global_accuracy_score` vs full-chart answer |
+| **Golden (optional)** | `golden_match_score` when question id exists in `eval/golden_answers.json` |
+
+### Configuration
+
+- [`experiments/benchmark.yaml`](experiments/benchmark.yaml) - experiment matrix (`chunk_method`, models, `top_k`)
+- [`eval/questions.json`](eval/questions.json) - questions (`default_subset` for faster runs)
+- [`eval/golden_answers.json`](eval/golden_answers.json) - reference answers for selected ids
+
+Chunk methods: `fixed_chars`, `paragraph`, `page`, `words_250`.
+
+Each experiment uses its own Chroma collection: `docs_rag_{chunk_method}_{embed_model}`.
+
+### Outputs
+
+Results under `nt-rag/results/<timestamp>/`:
+
+- `hardware.json` - CPU, RAM, GPU snapshot
+- `details.jsonl` - one JSON line per (experiment, question)
+- `summary.csv` - averages per experiment
+- `report.md` - readable table
+
+Set `run_full_chart: false` or `run_judge: false` in YAML for faster smoke tests.
+
+Compare runs on different PCs by setting `host_profile` in the YAML.
 
 ## Project layout
 
 ```
 nt-rag/
-  docker-compose.yml       # Ollama (CPU base)
-  docker-compose.gpu.yml   # GPU override
+  docker-compose.yml
+  docker-compose.gpu.yml
+  experiments/benchmark.yaml
+  eval/
+    benchmark.py
+    hardware.py
+    judge.py
+    questions.json
+    golden_answers.json
   scripts/
-    detect-gpu.sh
-    verify-ollama-gpu.sh
-  config.py
-  ollama_client.py
-  documents.py
   chunking.py
-  store.py
   ingest.py
   query.py
   run.py

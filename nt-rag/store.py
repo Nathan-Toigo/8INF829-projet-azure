@@ -15,19 +15,24 @@ def get_chroma_client() -> chromadb.PersistentClient:
     return chromadb.PersistentClient(path=str(config.CHROMA_DIR))
 
 
-def get_collection(client: chromadb.PersistentClient | None = None) -> Collection:
+def get_collection(
+    client: chromadb.PersistentClient | None = None,
+    collection_name: str | None = None,
+) -> Collection:
     if client is None:
         client = get_chroma_client()
+    name = collection_name or config.COLLECTION_NAME
     return client.get_or_create_collection(
-        name=config.COLLECTION_NAME,
+        name=name,
         metadata={"hnsw:space": "cosine"},
     )
 
 
-def clear_collection() -> None:
+def clear_collection(collection_name: str | None = None) -> None:
     client = get_chroma_client()
+    name = collection_name or config.COLLECTION_NAME
     try:
-        client.delete_collection(config.COLLECTION_NAME)
+        client.delete_collection(name)
     except (ValueError, NotFoundError):
         pass
 
@@ -54,6 +59,8 @@ def add_chunks(
                 {
                     "source_file": c.source_file,
                     "page_index": c.page_index,
+                    "chunk_method": c.chunk_method,
+                    "chunk_index": c.chunk_index,
                 }
                 for c in batch_chunks
             ],

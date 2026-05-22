@@ -1,0 +1,20 @@
+{
+  "default_subset": [
+    "q21", "q33", "q47", "q49", "q55", "q56", "q09", "q13", "q25", "q37"
+  ],
+  "questions": [
+    {"id": "q09", "question": "Quelle etait l'interpretation du prelevement par ponction a l'aiguille fine du ganglion cervical gauche ?", "tags": ["fna_pathology"]},
+    {"id": "q13", "question": "Quelles adenopathies cervicales sont decrites a l'IRM et dans quelles chaines ?", "tags": ["mri"]},
+    {"id": "q21", "question": "Quels nodules pulmonaires ont ete rapportes au CT thorax de 2022 et quelles tailles ?", "tags": ["ct_chest"]},
+    {"id": "q25", "question": "Comment la pneumologie a-t-elle interprete les nodules pulmonaires du CT ?", "tags": ["pulmonology"]},
+    {"id": "q33", "question": "Quel est le statut du bilan d'hematurie microscopique du patient ?", "tags": ["urology"]},
+    {"id": "q37", "question": "Quelle est l'evaluation de medecine interne concernant les lymphadenopathies persistantes en 2025 ?", "tags": ["im_followup"]},
+    {"id": "q47", "question": "Resumez l'evolution de la lymphadenopathie cervicale du patient AURALIS de 2021 a 2025.", "tags": ["transversal"]},
+    {"id": "q49", "question": "Le CT thorax de 2022 et la consultation pneumologie sont-ils alignes sur la meme strategie de suivi ?", "tags": ["transversal"]},
+    {"id": "q55", "question": "Taille du plus grand nodule pulmonaire au CT 2022 ?", "tags": ["short"]},
+    {"id": "q56", "question": "Date de l'examen CT thorax ?", "tags": ["short"]},
+    {"id": "q01", "question": "Quel etait le motif principal de consultation ORL en 2021 ?", "tags": ["ent"]},
+    {"id": "q22", "question": "Quelle surveillance ou suivi a ete recommande pour les nodules pulmonaires ?", "tags": ["ct_chest"]},
+    {"id": "q58", "question": "Le dossier indique-t-il qu'il s'agit de donnees synthetiques / non cliniques ?", "tags": ["short"]}
+  ]
+}

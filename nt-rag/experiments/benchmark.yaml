@@ -1,0 +1,27 @@
+# RAG benchmark matrix - UTF-8 ASCII comments only
+host_profile: laptop_windows
+questions: eval/questions.json
+golden_answers: eval/golden_answers.json
+run_full_chart: true
+run_judge: true
+
+experiments:
+  - id: fixed_chars_llama32
+    chunk_method: fixed_chars
+    chunk_size: 1200
+    chunk_overlap: 200
+    chat_model: llama3.2
+    embed_model: nomic-embed-text
+    top_k: 5
+
+  - id: paragraph_llama32
+    chunk_method: paragraph
+    chat_model: llama3.2
+    embed_model: nomic-embed-text
+    top_k: 5
+
+  - id: page_llama32
+    chunk_method: page
+    chat_model: llama3.2
+    embed_model: nomic-embed-text
+    top_k: 5
