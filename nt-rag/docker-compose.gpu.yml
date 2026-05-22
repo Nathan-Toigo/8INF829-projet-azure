@@ -1,0 +1,8 @@
+# Override: enable NVIDIA GPU for Ollama (use with docker-compose.yml)
+# docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+services:
+  ollama:
+    gpus: all
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_FLASH_ATTENTION=1
