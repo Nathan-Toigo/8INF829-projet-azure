@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import httpx
 
@@ -102,7 +103,21 @@ def embed_texts(
     return data["embeddings"]
 
 
-def chat_completion(
+def _extract_usage(data: dict) -> dict[str, int | None]:
+    """Token counts from Ollama /api/chat response."""
+    prompt = data.get("prompt_eval_count")
+    completion = data.get("eval_count")
+    total = None
+    if isinstance(prompt, int) and isinstance(completion, int):
+        total = prompt + completion
+    return {
+        "prompt_tokens": prompt if isinstance(prompt, int) else None,
+        "completion_tokens": completion if isinstance(completion, int) else None,
+        "total_tokens": total,
+    }
+
+
+def chat_completion_detailed(
     messages: list[dict[str, str]],
     *,
     model: str | None = None,
@@ -110,7 +125,9 @@ def chat_completion(
     timeout: float | None = None,
     max_retries: int | None = None,
     num_ctx: int | None = None,
-) -> str:
+    num_predict: int | None = None,
+) -> dict[str, Any]:
+    """Chat completion with content and Ollama token usage."""
     chat_model = model or config.OLLAMA_CHAT_MODEL
     read_timeout = timeout if timeout is not None else config.OLLAMA_CHAT_TIMEOUT
     retries = config.OLLAMA_CHAT_RETRIES if max_retries is None else max_retries
@@ -123,6 +140,8 @@ def chat_completion(
     }
     if num_ctx is not None:
         payload["options"]["num_ctx"] = num_ctx
+    if num_predict is not None:
+        payload["options"]["num_predict"] = num_predict
 
     last_error: Exception | None = None
     for attempt in range(retries + 1):
@@ -131,7 +150,11 @@ def chat_completion(
                 r = client.post("/api/chat", json=payload)
                 r.raise_for_status()
                 data = r.json()
-            return data.get("message", {}).get("content", "") or ""
+            usage = _extract_usage(data)
+            return {
+                "content": data.get("message", {}).get("content", "") or "",
+                **usage,
+            }
         except _TRANSIENT_CHAT_ERRORS as e:
             last_error = e
             if attempt < retries:
@@ -154,3 +177,24 @@ def chat_completion(
             ) from e
 
     raise RuntimeError("Ollama chat failed") from last_error
+
+
+def chat_completion(
+    messages: list[dict[str, str]],
+    *,
+    model: str | None = None,
+    temperature: float = 0.2,
+    timeout: float | None = None,
+    max_retries: int | None = None,
+    num_ctx: int | None = None,
+    num_predict: int | None = None,
+) -> str:
+    return chat_completion_detailed(
+        messages,
+        model=model,
+        temperature=temperature,
+        timeout=timeout,
+        max_retries=max_retries,
+        num_ctx=num_ctx,
+        num_predict=num_predict,
+    )["content"]

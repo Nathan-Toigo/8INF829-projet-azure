@@ -11,7 +11,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config
-from ollama_client import chat_completion, embed_texts
+from ollama_client import chat_completion_detailed, embed_texts
 from store import get_collection, query_collection
 
 SYSTEM_PROMPT = """You are a helpful assistant that answers questions using only the provided context from medical and clinical documents.
@@ -86,7 +86,7 @@ def ask_with_metrics(
             )
 
     t2 = time.perf_counter()
-    answer = chat_completion(
+    chat_result = chat_completion_detailed(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -100,6 +100,7 @@ def ask_with_metrics(
         ],
         model=chat,
     )
+    answer = chat_result["content"]
     chat_ms = (time.perf_counter() - t2) * 1000
     total_ms = query_embed_ms + retrieve_ms + chat_ms
 
@@ -107,6 +108,13 @@ def ask_with_metrics(
         ctx_chars = len(context)
         print(f"      context: {ctx_chars:,} chars from {len(retrieved)} chunk(s)", flush=True)
         print(f"      chat answer: {chat_ms:.0f} ms", flush=True)
+        if chat_result.get("total_tokens") is not None:
+            print(
+                f"      tokens: {chat_result.get('total_tokens')} "
+                f"(prompt {chat_result.get('prompt_tokens')}, "
+                f"completion {chat_result.get('completion_tokens')})",
+                flush=True,
+            )
         print(f"      RAG total: {total_ms / 1000:.2f} s", flush=True)
         if retrieved:
             from eval.display import log_retrieval
@@ -128,6 +136,9 @@ def ask_with_metrics(
             "total_ms": round(total_ms, 2),
             "context_chars": len(context),
             "retrieved_count": len(retrieved),
+            "prompt_tokens": chat_result.get("prompt_tokens"),
+            "completion_tokens": chat_result.get("completion_tokens"),
+            "total_tokens": chat_result.get("total_tokens"),
         },
     }
 

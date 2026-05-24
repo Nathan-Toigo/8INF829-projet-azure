@@ -46,7 +46,12 @@ def main() -> int:
     eval_p.add_argument(
         "--skip-ingest",
         action="store_true",
-        help="Reuse existing Chroma collections",
+        help="Never re-embed (reuse Chroma even if empty)",
+    )
+    eval_p.add_argument(
+        "--force-ingest",
+        action="store_true",
+        help="Always clear and re-embed (ignore reuse_existing_collection)",
     )
 
     args = parser.parse_args()
@@ -68,6 +73,7 @@ def main() -> int:
             dry_run=args.dry_run,
             all_questions=args.all_questions,
             skip_ingest=args.skip_ingest,
+            force_ingest=args.force_ingest,
         )
         return 0
 
