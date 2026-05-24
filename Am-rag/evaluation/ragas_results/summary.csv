@@ -1,0 +1,6 @@
+config,faithfulness,answer_relevancy,context_precision,context_recall
+dense_top5,1.0,0.632,0.733,0.9
+bm25_top5,0.985,0.643,0.692,0.842
+hybrid_top5,0.988,0.72,0.726,0.9
+hybrid_rerank_top3,0.997,0.826,0.783,0.892
+dense_rerank_top3,1.0,0.739,0.642,0.842
