@@ -46,23 +46,19 @@ TOP_CHUNKS_FOR_PROMPT = 2
 # Four predefined evaluation questions (synthetic AURALIS patient chart)
 TEST_QUESTIONS = [
     (
-        "fna_pathology",
-        "What was the interpretation of the left cervical lymph node fine-needle "
-        "aspiration pathology and flow cytometry findings from 2021?",
+        "q1",
+        "What medications is the patient taking?",
     ),
     (
-        "ct_chest_nodules",
-        "What pulmonary nodule findings were reported on the 2022 CT chest exam, "
-        "and what follow-up surveillance was recommended?",
+        "q2",
+        "What was the interpretation of the left cervical lymph node fine-needle aspiration pathology and flow cytometry findings from 2021?",
     ),
     (
-        "hematuria_workup",
-        "What is the current status of the patient's microscopic hematuria evaluation "
-        "and urology surveillance plan through 2025?",
+        "q3",
+        "What pulmonary nodule findings were reported on the 2022 CT chest exam and what follow-up surveillance was recommended? "
     ),
     (
-        "lymphadenopathy_plan",
-        "What is the internal medicine assessment and management plan for the "
-        "patient's persistent lymphadenopathy as of the March 2025 follow-up visit?",
+        "q4",
+        "Quelle surveillance ou suivi a ete recommande pour les nodules pulmonaires ? ",
     ),
 ]
