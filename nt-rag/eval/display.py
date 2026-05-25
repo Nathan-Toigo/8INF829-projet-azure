@@ -62,6 +62,8 @@ def log_judge_scores(scores: dict[str, Any], *, prefix: str = "judge") -> None:
         raw = str(scores.get("parse_error", ""))[:120]
         print(f"      raw: {raw}...", flush=True)
         return
+    if scores.get("_parse_partial"):
+        print(f"      ({prefix}: scores recovered from partial JSON)", flush=True)
     for key in (
         "accuracy_score",
         "quality_score",
@@ -75,20 +77,10 @@ def log_judge_scores(scores: dict[str, Any], *, prefix: str = "judge") -> None:
 
 def log_question_summary(row: dict[str, Any]) -> None:
     parts = [
-        f"total={row.get('total_question_sec')}s",
+        f"chat={row.get('chat_ms')}ms",
+        f"tokens={row.get('total_tokens')}",
+        f"top1={row.get('top1_distance')}",
     ]
-    if row.get("full_chart_sec") is not None:
-        parts.append(f"full={row.get('full_chart_sec')}s")
-    if row.get("judge_sec") is not None:
-        parts.append(f"judge={row.get('judge_sec')}s")
-    if row.get("global_accuracy_score") is not None:
-        parts.append(f"global_acc={row.get('global_accuracy_score')}")
-    if row.get("golden_match_score") is not None:
-        parts.append(f"golden={row.get('golden_match_score')}")
-    if row.get("full_chart_error"):
-        parts.append("full_chart=FAIL")
-    if row.get("judge_error"):
-        parts.append("judge=FAIL")
     print(f"  --- summary: {', '.join(parts)}", flush=True)
 
 

@@ -67,6 +67,14 @@ def add_chunks(
         )
 
 
+def collection_vector_count(collection_name: str) -> int:
+    """Return stored vector count, or 0 if the collection is missing or empty."""
+    try:
+        return get_collection(collection_name=collection_name).count()
+    except Exception:
+        return 0
+
+
 def query_collection(
     collection: Collection,
     query_embedding: list[float],

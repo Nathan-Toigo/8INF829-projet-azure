@@ -13,7 +13,32 @@ import config
 from chunking import chunk_documents
 from documents import load_all_documents
 from ollama_client import embed_texts
-from store import add_chunks, clear_collection, get_collection
+from store import add_chunks, clear_collection, collection_vector_count, get_collection
+
+
+def ingest_metrics_for_existing_collection(
+    collection_name: str,
+    *,
+    chunk_method: str,
+    embed_model: str,
+) -> dict:
+    """Metrics snapshot when reusing vectors already stored in Chroma."""
+    n = collection_vector_count(collection_name)
+    return {
+        "documents": None,
+        "chunks": n,
+        "vectors": n,
+        "embed_seconds": 0,
+        "ingest_total_sec": 0,
+        "chunk_method": chunk_method,
+        "embed_model": embed_model,
+        "collection_name": collection_name,
+        "ingest_reused": True,
+    }
+
+
+def should_skip_ingest(collection_name: str) -> bool:
+    return collection_vector_count(collection_name) > 0
 
 
 def run_ingest(
