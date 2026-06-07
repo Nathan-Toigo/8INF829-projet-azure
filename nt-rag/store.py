@@ -85,3 +85,11 @@ def query_collection(
         n_results=top_k,
         include=["documents", "metadatas", "distances"],
     )
+
+
+def delete_by_source(collection: Collection, source_file: str) -> None:
+    """Remove all chunks for a given source file name."""
+    try:
+        collection.delete(where={"source_file": source_file})
+    except Exception:
+        pass

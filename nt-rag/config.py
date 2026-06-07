@@ -36,6 +36,15 @@ EMBED_MAX_CHARS = int(os.getenv("EMBED_MAX_CHARS", "6000"))
 # Full-chart sends all docs in one prompt; too large can crash Ollama (connection reset)
 MAX_FULL_DOC_CHARS = int(os.getenv("MAX_FULL_DOC_CHARS", "60000"))
 
+# MCP server (agent + tools)
+MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
+MCP_PORT = int(os.getenv("MCP_PORT", "8010"))
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", f"http://{MCP_HOST}:{MCP_PORT}/mcp")
+
+# Conversational agent
+AGENT_MAX_TOOL_ITERATIONS = int(os.getenv("AGENT_MAX_TOOL_ITERATIONS", "5"))
+UPLOADS_DIR = Path(os.getenv("UPLOADS_DIR", RAG_ROOT / "uploads")).resolve()
+
 
 def normalize_model_for_collection(model: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "-", model.replace(":", "-"))

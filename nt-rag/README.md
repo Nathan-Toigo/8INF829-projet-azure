@@ -1,4 +1,4 @@
-# RAG ù Ollama local over `docs/`
+# RAG ? Ollama local over `docs/`
 
 Build a retrieval-augmented index from PDF/DOCX files in the repository `docs/` folder, then ask questions with **Ollama** running locally in **Docker** (embeddings + chat). No Azure account required.
 
@@ -6,7 +6,7 @@ Build a retrieval-augmented index from PDF/DOCX files in the repository `docs/` 
 
 - Python 3.11+
 - [Docker Desktop](https://docs.docker.com/get-docker/) (WSL2 backend on Windows)
-- ~4ù8 GB disk for models (depends on chat model choice)
+- ~4?8 GB disk for models (depends on chat model choice)
 - **Optional (GPU):** NVIDIA GPU, recent drivers, GPU support enabled in Docker Desktop
 
 ## Quick start
@@ -109,11 +109,77 @@ After changing the embedding model, re-run `python run.py ingest`.
 | `python run.py chat` | Interactive session (`quit` to exit) |
 | `python run.py eval` | Run benchmark matrix (see below) |
 
+## Agent conversationnel (web + MCP)
+
+Interface web et serveur MCP qui **r?utilisent** les pipelines existants (`ingest`, `query`, Chroma, Ollama). Les commandes CLI ci-dessus restent inchang?es.
+
+### Demarrage
+
+**Option A ? Docker Compose (Ollama + MCP + UI)** :
+
+```bash
+cd nt-rag
+docker compose up -d --build
+# UI : http://localhost:8501
+# MCP : http://localhost:8010/mcp
+# Ollama : http://localhost:11434
+```
+
+Premier lancement : tirer les modeles et indexer :
+
+```bash
+docker compose exec ollama ollama pull nomic-embed-text
+docker compose exec ollama ollama pull llama3.2
+docker compose exec mcp-server python -c "from ingest import run_ingest; run_ingest(clear=True)"
+```
+
+**Option B ? terminaux locaux** (Ollama via Docker, agent en local) :
+
+Terminal 1 ? serveur MCP (outils RAG + exemples) :
+
+```bash
+cd nt-rag
+source .venv/Scripts/activate
+python -m mcp_server.server
+```
+
+Terminal 2 ? interface web :
+
+```bash
+streamlit run ui/app.py
+```
+
+Ouvrir l'URL affich?e (souvent `http://localhost:8501`).
+
+### Outils MCP expos?s
+
+| Outil | R?le |
+|-------|------|
+| `rag_ask` | Pipeline RAG complet (`query.ask_with_metrics`) |
+| `rag_search` | Recherche s?mantique sans g?n?ration |
+| `ingest_documents` | Indexation `docs/` (`ingest.run_ingest`) |
+| `index_stats` | Statistiques Chroma |
+| `get_current_time` | Exemple : heure UTC |
+| `count_words` | Exemple : comptage de mots |
+| `echo_message` | Exemple : echo |
+| `list_document_sources` | Liste les fichiers dans `docs/` |
+
+Configuration MCP dans `.env` : `MCP_HOST`, `MCP_PORT` (d?faut `8010`).
+
+### Layout agent
+
+```
+nt-rag/
+  agent/           # Agent Ollama + boucle d'outils MCP
+  mcp_server/      # Serveur HTTP MCP (FastMCP)
+  ui/app.py        # Interface Streamlit
+```
+
 Vector data: `nt-rag/data/chroma/` (gitignored).
 
 ## Benchmark / evaluation pipeline
 
-Compare **chunking methods** and **chat models** ù RAG answers only (no full-chart, no LLM judge).
+Compare **chunking methods** and **chat models** ? RAG answers only (no full-chart, no LLM judge).
 
 ### Quick run
 
@@ -165,6 +231,15 @@ Compare runs on different PCs by setting `host_profile` in the YAML.
 
 ```
 nt-rag/
+  agent/
+    chat_agent.py
+    mcp_client.py
+    runtime.py
+  mcp_server/
+    server.py
+    tools/
+  ui/
+    app.py
   docker-compose.yml
   docker-compose.gpu.yml
   experiments/benchmark.yaml
