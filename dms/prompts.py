@@ -45,9 +45,6 @@ Evaluate ONLY based on the materials provided. Output valid JSON matching the re
 Scores are integers from 0 to 100.
 
 Scoring guidance:
-- accuracy_score: factual alignment of the RAG answer with the reference answer and RAG excerpts
-- quality_score: clarity, clinical appropriateness, structure, absence of hallucination
-- thoroughness_score: coverage of relevant findings available in the RAG excerpts vs reference
 - global_accuracy_score: overall accuracy of the RAG answer (holistic 0-100)
 
 Be concise in assessment fields (2-4 sentences each).

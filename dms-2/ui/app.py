@@ -138,7 +138,7 @@ with st.sidebar:
 # ---------------------------------------------------------------------- main
 st.title("8INF829 - TP#2 - Agent de Préparation Clinique")
 st.caption(
-    "Donnees synthetiques uniquement"
+    "Donnees synthetiques"
 )
 
 memory = get_memory()
