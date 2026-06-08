@@ -14,7 +14,7 @@ from config import (
     TOP_K,
 )
 from ingestion import load_all_documents
-from chunking import chunk_recursive
+from chunking import chunk_documents
 from indexing import build_index, load_index
 from retrieval import (
     get_dense_retriever,
@@ -47,7 +47,7 @@ def build_pipeline(cfg: RAGConfig, rebuild: bool = False):
     setup_llm()
 
     docs = load_all_documents()
-    nodes = chunk_recursive(docs)
+    nodes = chunk_documents(docs, "tokens512")
 
     if rebuild:
         index = build_index(nodes)
