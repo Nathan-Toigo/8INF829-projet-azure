@@ -1,4 +1,4 @@
-# Dev #1 – RAG  
+# Dev #1 à 3  
 ## Les Trois Tokens  
 ### 8INF829 – Séminaire de maîtrise en informatique I
 

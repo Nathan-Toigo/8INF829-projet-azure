@@ -1,0 +1,28 @@
+# --- Agent orchestration ---
+langgraph>=0.2.50
+langchain>=0.3.7
+langchain-core>=0.3.15
+langchain-openai>=0.2.8
+
+# --- LLM gateway (OpenRouter is OpenAI-compatible) ---
+openai>=1.40.0
+
+# --- Storage ---
+pymongo>=4.8.0
+chromadb>=0.5.18
+
+# --- Ingestion / OCR ---
+pypdf>=4.3.1
+python-docx>=1.1.2
+PyMuPDF>=1.24.0
+Pillow>=10.4.0
+
+# --- Observability ---
+langsmith>=0.1.140
+
+# --- UI ---
+streamlit>=1.39.0
+
+# --- Misc ---
+python-dotenv>=1.0.1
+pydantic>=2.8.0
