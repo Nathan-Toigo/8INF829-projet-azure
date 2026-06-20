@@ -1,7 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
-.env
+# .env
 chroma/
 uploads/
 .DS_Store

@@ -78,6 +78,71 @@ if pid:
                 st.write(f"- {m}")
         else:
             st.caption("None flagged.")
+        
+        # === Step 4 outputs (Amal) ===
+        explanation = result.get("patient_explanation") or result.get("patient_friendly_explanation")
+        if explanation:
+            st.divider()
+            st.subheader("Patient-friendly explanation")
+            st.write(explanation)
+
+            key_points = result.get("patient_key_points", [])
+            if key_points:
+                st.markdown("**Key points**")
+                for kp in key_points:
+                    st.write(f"- {kp}")
+
+            actions = result.get("patient_recommended_actions", [])
+            if actions:
+                st.markdown("**Recommended actions**")
+                for a in actions:
+                    st.write(f"- {a}")
+
+            reading = result.get("patient_explanation_reading_level")
+            if reading:
+                st.caption(f"Estimated reading level: {reading}")
+
+            appropriateness_passed = result.get("patient_appropriateness_passed")
+            appropriateness_score = result.get("patient_appropriateness_score")
+            if appropriateness_passed is not None or appropriateness_score is not None:
+                st.markdown("**Patient representative review**")
+                if appropriateness_passed:
+                    st.success(f"Appropriateness validated (score: {appropriateness_score})")
+                else:
+                    st.warning(f"Appropriateness needed revision (score: {appropriateness_score})")
+                issues = result.get("patient_appropriateness_issues", [])
+                for issue in issues:
+                    st.write(f"- {issue}")
+
+        review_assessment = result.get("clinical_review_assessment")
+        if review_assessment:
+            st.divider()
+            st.subheader("Clinical review notes")
+            review_passed = result.get("clinical_review_passed")
+            clinical_score = result.get("clinical_score")
+            if review_passed:
+                st.success(f"Clinical review passed (score: {clinical_score})")
+            else:
+                st.warning(f"Clinical review found issues (score: {clinical_score})")
+            st.write(review_assessment)
+
+            missing_safety = result.get("clinical_review_missing_safety_points", [])
+            if missing_safety:
+                st.markdown("**Missing safety points**")
+                for m in missing_safety:
+                    st.warning(m)
+
+            unsupported = result.get("clinical_review_unsupported_claims", [])
+            if unsupported:
+                st.markdown("**Unsupported claims**")
+                for u in unsupported:
+                    st.write(f"- {u}")
+
+            inconsistencies = result.get("clinical_review_inconsistencies", [])
+            if inconsistencies:
+                st.markdown("**Inconsistencies**")
+                for inc in inconsistencies:
+                    st.write(f"- {inc}")
 
         st.divider()
         st.subheader("Deferred sections (Phases 5-8)")

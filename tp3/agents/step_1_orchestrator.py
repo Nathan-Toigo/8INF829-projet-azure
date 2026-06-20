@@ -23,12 +23,16 @@ from memory import short_term_memory
 AGENT_ID = "1.1 Clinical Agent Orchestrator"
 END = "END"
 
+# Ajout Amal
 # Foundation agents available this pass, in default escalation order.
 FOUNDATION_ORDER = [
     ("2.1 Timeline Agent", "timeline"),
     ("2.2 Guidelines Agent", "guidelines"),
     ("2.3 Risk Agent", "risks"),
     ("2.4 Case Investigator Agent", "similar_cases"),
+     ("4.1 Patient Explanation Agent", "patient_explanation"),
+    ("4.2 Patient Representative Agent", "patient_appropriateness_passed"),
+    ("4.3 Clinical Review Agent", "clinical_review_assessment"),
 ]
 AVAILABLE_AGENTS = [a for a, _ in FOUNDATION_ORDER]
 

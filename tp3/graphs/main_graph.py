@@ -158,6 +158,7 @@ def run_workflow(patient_id: str, question: str) -> dict:
                 "stepCount": final.get("step_count", 0),
                 "errors": final.get("errors", []),
                 # Gathered content so pages can render results without re-running.
+                # Ajout AMAL
                 "result": {
                     "timeline": final.get("timeline", []),
                     "missing_dates": final.get("missing_dates", []),
@@ -169,6 +170,21 @@ def run_workflow(patient_id: str, question: str) -> dict:
                     "risk_rationale": final.get("risk_rationale", []),
                     "similar_cases": final.get("similar_cases", []),
                     "case_patterns": final.get("case_patterns", []),
+                    "patient_explanation": final.get("patient_explanation", ""),
+                    "patient_friendly_explanation": final.get("patient_friendly_explanation", ""),
+                    "patient_key_points": final.get("patient_key_points", []),
+                    "patient_recommended_actions": final.get("patient_recommended_actions", []),
+                    "patient_explanation_reading_level": final.get("patient_explanation_reading_level", ""),
+                    "patient_appropriateness_passed": final.get("patient_appropriateness_passed"),
+                    "patient_appropriateness_score": final.get("patient_appropriateness_score"),
+                    "patient_appropriateness_issues": final.get("patient_appropriateness_issues", []),
+                    "clinical_review_passed": final.get("clinical_review_passed"),
+                    "clinical_score": final.get("clinical_score"),
+                    "clinical_review_assessment": final.get("clinical_review_assessment", ""),
+                    "clinical_review_missing_safety_points": final.get("clinical_review_missing_safety_points", []),
+                    "clinical_review_unsupported_claims": final.get("clinical_review_unsupported_claims", []),
+                    "clinical_review_inconsistencies": final.get("clinical_review_inconsistencies", []),
+
                 },
             }
         )
