@@ -23,18 +23,30 @@ from memory import short_term_memory
 AGENT_ID = "1.1 Clinical Agent Orchestrator"
 END = "END"
 
-# Ajout Amal
-# Foundation agents available this pass, in default escalation order.
-FOUNDATION_ORDER = [
+STEP_2_ORDER = [
     ("2.1 Timeline Agent", "timeline"),
     ("2.2 Guidelines Agent", "guidelines"),
     ("2.3 Risk Agent", "risks"),
     ("2.4 Case Investigator Agent", "similar_cases"),
-     ("4.1 Patient Explanation Agent", "patient_explanation"),
+]
+
+STEP_3_AGENTS = {
+    "3.5 Care Planning Agent",
+    "3.1 Investigation Planning Agent",
+    "3.2 Hypothesis Agent",
+    "3.3 Evidence Validation Agent",
+    "3.4 Gap Validation Agent",
+    "3.6 Confidence Assessment Agent",
+}
+
+STEP_4_ORDER = [
+    ("4.1 Patient Explanation Agent", "patient_explanation"),
     ("4.2 Patient Representative Agent", "patient_appropriateness_passed"),
     ("4.3 Clinical Review Agent", "clinical_review_assessment"),
 ]
-AVAILABLE_AGENTS = [a for a, _ in FOUNDATION_ORDER]
+
+FOUNDATION_ORDER = STEP_2_ORDER + STEP_4_ORDER
+AVAILABLE_AGENTS = [a for a, _ in FOUNDATION_ORDER] + sorted(STEP_3_AGENTS)
 
 
 class OrchestratorDecision(BaseModel):
@@ -47,19 +59,46 @@ _SYSTEM = (
     "You are the 1.1 Clinical Agent Orchestrator, the supervisor of an autonomous "
     "clinical multi-agent system. Given the current shared memory, classify the "
     "user's intent and choose the single best next agent to run, or 'END' when "
-    "enough has been gathered. Consider: what information is missing or "
-    "unreliable, what output is required next, which agent owns that domain, "
-    "whether an agent already ran, and whether the workflow is looping. "
+    "enough has been gathered. Step 3 reasoning is routed deterministically; "
+    "prefer the heuristic suggestion for Step 3 agents. "
     f"Choose next_agent strictly from: {', '.join(AVAILABLE_AGENTS)} or END."
 )
 
 
+def _step_2_complete(state: dict) -> bool:
+    return all(short_term_memory.has_content(state, key) for _, key in STEP_2_ORDER)
+
+
+def _step_3_next(state: dict) -> str | None:
+    if state.get("step_3_complete"):
+        return None
+
+    if state.get("step_3_restart_requested"):
+        return "3.5 Care Planning Agent"
+
+    if not state.get("step_3_care_plan_done"):
+        return "3.5 Care Planning Agent"
+    if not state.get("step_3_investigation_done"):
+        return "3.1 Investigation Planning Agent"
+    if not short_term_memory.has_content(state, "hypotheses"):
+        return "3.2 Hypothesis Agent"
+    return None
+
+
 def _heuristic_next(state: dict) -> str:
-    """Deterministic fallback / guard: first foundation step with no content."""
-    ran = set(state.get("agents_run", []))
-    for agent_id, key in FOUNDATION_ORDER:
-        if agent_id not in ran and not short_term_memory.has_content(state, key):
+    for agent_id, key in STEP_2_ORDER:
+        if not short_term_memory.has_content(state, key):
             return agent_id
+
+    if _step_2_complete(state) and not state.get("step_3_complete"):
+        step_3 = _step_3_next(state)
+        if step_3:
+            return step_3
+
+    for agent_id, key in STEP_4_ORDER:
+        if not short_term_memory.has_content(state, key):
+            return agent_id
+
     return END
 
 
@@ -70,7 +109,6 @@ class OrchestratorAgent(BaseAgent):
     def execute(self, state):
         token_records: list = []
 
-        # Loop protection.
         if state.get("step_count", 0) >= settings.MAX_AGENT_STEPS:
             return (
                 AgentResponse(
@@ -88,7 +126,6 @@ class OrchestratorAgent(BaseAgent):
         heuristic = _heuristic_next(state)
         intent = state.get("intent", "")
 
-        # Ask the LLM supervisor for a routing decision.
         try:
             user = (
                 f"{self.context_block(state)}\n\n"
@@ -110,17 +147,22 @@ class OrchestratorAgent(BaseAgent):
         except Exception:
             choice, reason = heuristic, "Heuristic routing (LLM unavailable)."
 
-        # Guard the LLM choice: must be available and not already run; otherwise
-        # fall back to the deterministic heuristic to guarantee progress.
-        ran = set(state.get("agents_run", []))
         if choice not in AVAILABLE_AGENTS and choice != END:
             choice = heuristic
-        elif choice in ran:
-            choice = heuristic
+        elif choice != END:
+            ran = set(state.get("agents_run", []))
+            if choice in ran and choice not in STEP_3_AGENTS:
+                choice = heuristic
+            elif choice in STEP_3_AGENTS:
+                expected = _step_3_next(state)
+                if expected and choice != expected:
+                    choice = expected
 
-        memory_updates = {}
+        memory_updates: dict = {}
         if intent and intent != state.get("intent"):
             memory_updates["intent"] = intent
+        if state.get("step_3_restart_requested") and choice == "3.5 Care Planning Agent":
+            memory_updates["step_3_restart_requested"] = False
 
         next_agent = None if choice == END else choice
         return (

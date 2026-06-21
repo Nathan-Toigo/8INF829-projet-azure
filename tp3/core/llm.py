@@ -39,15 +39,22 @@ _TIER_MODELS = {
 }
 
 
-def model_name(tier: str) -> str:
+def model_name(tier: str, model_override: str | None = None) -> str:
+    if model_override:
+        return model_override
     return _TIER_MODELS.get(tier, settings.OPENROUTER_SMALL_MODEL)
 
 
-def get_model(tier: str = "small", temperature: float = 0.2) -> ChatOpenAI:
-    key = (tier, temperature)
+def get_model(
+    tier: str = "small",
+    temperature: float = 0.2,
+    model_override: str | None = None,
+) -> ChatOpenAI:
+    resolved = model_name(tier, model_override)
+    key = (resolved, temperature)
     if key not in _models:
         _models[key] = ChatOpenAI(
-            model=model_name(tier),
+            model=resolved,
             temperature=temperature,
             api_key=settings.require_openrouter_key(),
             base_url=settings.OPENROUTER_BASE_URL,
@@ -56,11 +63,11 @@ def get_model(tier: str = "small", temperature: float = 0.2) -> ChatOpenAI:
     return _models[key]
 
 
-def _usage_record(step: str, tier: str, message: Any) -> dict:
+def _usage_record(step: str, tier: str, message: Any, model_override: str | None = None) -> dict:
     usage = getattr(message, "usage_metadata", None) or {}
     return {
         "step": step,
-        "model": model_name(tier),
+        "model": model_name(tier, model_override),
         "prompt_tokens": usage.get("input_tokens", 0),
         "completion_tokens": usage.get("output_tokens", 0),
         "total_tokens": usage.get("total_tokens", 0),
@@ -88,8 +95,9 @@ def invoke_structured(
     schema: type[BaseModel],
     tier: str = "small",
     temperature: float = 0.2,
+    model_override: str | None = None,
 ) -> tuple[BaseModel, dict]:
-    model = get_model(tier, temperature)
+    model = get_model(tier, temperature, model_override=model_override)
     structured = model.with_structured_output(schema, include_raw=True)
     result = structured.invoke(
         [SystemMessage(content=system), HumanMessage(content=user)]
@@ -97,7 +105,7 @@ def invoke_structured(
     parsed = result.get("parsed")
     if parsed is None:  # fall back to an empty instance on parse failure
         parsed = schema()
-    return parsed, _usage_record(step, tier, result.get("raw"))
+    return parsed, _usage_record(step, tier, result.get("raw"), model_override)
 
 
 def _result_to_text(result: Any) -> str:
@@ -118,13 +126,14 @@ def run_agentic_step(
     tier: str = "small",
     max_iters: int = 4,
     temperature: float = 0.2,
+    model_override: str | None = None,
 ) -> tuple[BaseModel, list[dict], list[dict]]:
     """ReAct-style step: bind tools to the model, let it call them iteratively to
     enrich the memory-seeded context, then emit a structured result.
 
     Returns ``(parsed_schema, tool_call_records, token_records)``.
     """
-    model = get_model(tier, temperature)
+    model = get_model(tier, temperature, model_override=model_override)
     by_name = {t.name: t for t in tools}
     messages: list[BaseMessage] = [
         SystemMessage(content=system),
@@ -137,7 +146,7 @@ def run_agentic_step(
         llm_with_tools = model.bind_tools(tools)
         for _ in range(max_iters):
             ai = llm_with_tools.invoke(messages)
-            token_records.append(_usage_record(step, tier, ai))
+            token_records.append(_usage_record(step, tier, ai, model_override))
             messages.append(ai)
             calls = getattr(ai, "tool_calls", None) or []
             if not calls:
@@ -181,7 +190,7 @@ def run_agentic_step(
         ]
     )
     parsed = final.get("parsed") or schema()
-    token_records.append(_usage_record(step, tier, final.get("raw")))
+    token_records.append(_usage_record(step, tier, final.get("raw"), model_override))
     return parsed, tool_records, token_records
 
 

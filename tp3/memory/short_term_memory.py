@@ -26,6 +26,7 @@ CONTENT_KEYS = [
     "missing_information",
     "investigation_plan",
     "care_plan",
+    "confidence_score",
     "clinical_review",
 ]
 

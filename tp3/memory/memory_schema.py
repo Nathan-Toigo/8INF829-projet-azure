@@ -40,6 +40,20 @@ class ShortTermMemory(TypedDict, total=False):
     missing_information: list
     critical_gaps: list
     investigation_plan: list
+    step_3_phase: str
+    step_3_attempt: int
+    step_3_use_alt_model: bool
+    step_3_best_confidence: float
+    step_3_restart_requested: bool
+    step_3_best_snapshot: dict
+    step_3_previous_attempts: list
+    step_3_care_plan_done: bool
+    step_3_investigation_done: bool
+    step_3_complete: bool
+    hypothesis_evidence_rounds: int
+    gap_validation_retries: int
+    hypotheses_sufficient: bool
+    gap_validation_rationale: str
 
     # Output (populated in later phases)
     care_plan: list
@@ -104,6 +118,20 @@ def empty_short_term(
         missing_information=[],
         critical_gaps=[],
         investigation_plan=[],
+        step_3_phase="",
+        step_3_attempt=1,
+        step_3_use_alt_model=False,
+        step_3_best_confidence=0.0,
+        step_3_restart_requested=False,
+        step_3_best_snapshot={},
+        step_3_previous_attempts=[],
+        step_3_care_plan_done=False,
+        step_3_investigation_done=False,
+        step_3_complete=False,
+        hypothesis_evidence_rounds=0,
+        gap_validation_retries=0,
+        hypotheses_sufficient=False,
+        gap_validation_rationale="",
         care_plan=[],
         clinical_summary="",
         follow_up_actions=[],

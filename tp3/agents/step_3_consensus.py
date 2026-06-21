@@ -1,4 +1,4 @@
-"""3.7 Consensus Agent (deferred stub - Phase 6)."""
+"""3.7 Consensus Agent (deferred stub)."""
 
 from agents._stub import make_stub
 

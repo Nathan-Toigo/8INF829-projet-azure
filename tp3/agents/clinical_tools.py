@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from langchain_core.tools import StructuredTool
 
 from config import settings
-from tools import chromadb_tools, mongodb_tools
+from tools import chromadb_tools, mongodb_tools, web_search_tools
 
 
 def _format_hits(hits) -> str:
@@ -99,4 +99,20 @@ def make_similar_cases_search_tool() -> StructuredTool:
         _fn,
         name="chromadb_similar_cases_search",
         description="Search historical or synthetic similar patient cases.",
+    )
+
+
+def make_web_clinical_search_tool() -> StructuredTool:
+    def _fn(query: str, max_results: int = 5) -> str:
+        """Search the web for clinical information: lab tests, imaging, differential
+        diagnoses, specialist topics, and similar symptom presentations."""
+        return web_search_tools.web_clinical_search(query, max_results=max_results)
+
+    return StructuredTool.from_function(
+        _fn,
+        name="web_clinical_search",
+        description=(
+            "Search the web for clinical references: lab tests, imaging, "
+            "differential diagnoses, and specialist guidance."
+        ),
     )

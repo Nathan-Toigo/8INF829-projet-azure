@@ -184,7 +184,21 @@ def run_workflow(patient_id: str, question: str) -> dict:
                     "clinical_review_missing_safety_points": final.get("clinical_review_missing_safety_points", []),
                     "clinical_review_unsupported_claims": final.get("clinical_review_unsupported_claims", []),
                     "clinical_review_inconsistencies": final.get("clinical_review_inconsistencies", []),
-
+                    "investigation_plan": final.get("investigation_plan", []),
+                    "hypotheses": final.get("hypotheses", []),
+                    "hypothesis_rationale": final.get("hypothesis_rationale", []),
+                    "evidence": final.get("evidence", []),
+                    "contradictions": final.get("contradictions", []),
+                    "unsupported_claims": final.get("unsupported_claims", []),
+                    "missing_information": final.get("missing_information", []),
+                    "critical_gaps": final.get("critical_gaps", []),
+                    "care_plan": final.get("care_plan", []),
+                    "confidence_score": final.get("confidence_score"),
+                    "confidence_rationale": final.get("confidence_rationale", ""),
+                    "requires_consensus": final.get("requires_consensus"),
+                    "hypotheses_sufficient": final.get("hypotheses_sufficient"),
+                    "step_3_attempt": final.get("step_3_attempt"),
+                    "step_3_best_confidence": final.get("step_3_best_confidence"),
                 },
             }
         )

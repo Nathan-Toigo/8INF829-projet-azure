@@ -19,8 +19,8 @@ sidebar()
 
 st.title("Care plan")
 st.caption(
-    "Structured output assembled from the multi-agent run. Reasoning, care-plan "
-    "generation, and review sections are added in later phases (5-8)."
+    "Structured output assembled from the multi-agent run including Step 3 "
+    "reasoning, care plan, and patient review sections."
 )
 
 pid = require_patient()
@@ -71,14 +71,81 @@ if pid:
         else:
             st.caption("No similar cases recorded.")
 
-        st.subheader("Missing information")
+        st.subheader("Missing timeline dates")
         missing = result.get("missing_dates", [])
         if missing:
             for m in missing:
                 st.write(f"- {m}")
         else:
             st.caption("None flagged.")
-        
+
+        st.divider()
+        st.subheader("Step 3 — Investigation plan")
+        inv_plan = result.get("investigation_plan", [])
+        if inv_plan:
+            st.dataframe(inv_plan, use_container_width=True)
+        else:
+            st.caption("No investigation plan recorded.")
+
+        st.subheader("Hypotheses")
+        hypotheses = result.get("hypotheses", [])
+        if hypotheses:
+            st.dataframe(hypotheses, use_container_width=True)
+            for note in result.get("hypothesis_rationale", [])[:5]:
+                st.caption(note)
+        else:
+            st.caption("No hypotheses recorded.")
+
+        st.subheader("Evidence")
+        evidence = result.get("evidence", [])
+        if evidence:
+            st.dataframe(evidence, use_container_width=True)
+        else:
+            st.caption("No evidence recorded.")
+
+        if result.get("contradictions"):
+            st.subheader("Contradictions")
+            for c in result["contradictions"]:
+                st.warning(c)
+
+        if result.get("unsupported_claims"):
+            st.subheader("Unsupported claims")
+            for u in result["unsupported_claims"]:
+                st.write(f"- {u}")
+
+        st.subheader("Clinical gaps")
+        gaps = result.get("missing_information", [])
+        critical = result.get("critical_gaps", [])
+        if gaps or critical:
+            if critical:
+                st.markdown("**Critical gaps**")
+                for g in critical:
+                    st.error(g)
+            if gaps:
+                st.markdown("**Missing information**")
+                for g in gaps:
+                    st.write(f"- {g}")
+        else:
+            st.caption("No gaps flagged.")
+
+        st.subheader("Proposed care plan")
+        care = result.get("care_plan", [])
+        if care:
+            st.dataframe(care, use_container_width=True)
+        else:
+            st.caption("No care plan recorded.")
+
+        conf = result.get("confidence_score")
+        if conf is not None:
+            st.subheader("Confidence")
+            st.metric("Score", f"{conf:.0%}")
+            if result.get("confidence_rationale"):
+                st.write(result["confidence_rationale"])
+            if result.get("step_3_best_confidence"):
+                st.caption(f"Best across attempts: {result['step_3_best_confidence']:.0%}")
+            if result.get("requires_consensus"):
+                st.warning("Low confidence — consensus review recommended.")
+
         # === Step 4 outputs (Amal) ===
         explanation = result.get("patient_explanation") or result.get("patient_friendly_explanation")
         if explanation:
@@ -144,15 +211,3 @@ if pid:
                 for inc in inconsistencies:
                     st.write(f"- {inc}")
 
-        st.divider()
-        st.subheader("Deferred sections (Phases 5-8)")
-        for section in [
-            "Hypotheses",
-            "Supporting / contradicting evidence",
-            "Investigation plan",
-            "Proposed care plan",
-            "Confidence score",
-            "Patient-friendly explanation",
-            "Clinical review notes",
-        ]:
-            st.caption(f"• {section} - not yet implemented")

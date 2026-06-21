@@ -26,3 +26,4 @@ streamlit>=1.39.0
 # --- Misc ---
 python-dotenv>=1.0.1
 pydantic>=2.8.0
+duckduckgo-search>=6.3.0

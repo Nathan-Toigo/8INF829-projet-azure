@@ -29,6 +29,7 @@ OPENROUTER_APP_TITLE = os.getenv("OPENROUTER_APP_TITLE", "ThreeTokens Care Agent
 
 # Model tiers (spec section 14).
 OPENROUTER_STRONG_MODEL = os.getenv("OPENROUTER_STRONG_MODEL", "openai/gpt-4o")
+OPENROUTER_ALT_STRONG_MODEL = os.getenv("OPENROUTER_ALT_STRONG_MODEL", "")
 OPENROUTER_SMALL_MODEL = os.getenv("OPENROUTER_SMALL_MODEL", "openai/gpt-4o-mini")
 OPENROUTER_VISION_MODEL = os.getenv("OPENROUTER_VISION_MODEL", "openai/gpt-4o-mini")
 OPENROUTER_EMBEDDING_MODEL = os.getenv(
@@ -52,6 +53,9 @@ RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 # --- Agent loop protection (spec section 13) ---
 MAX_AGENT_STEPS = int(os.getenv("MAX_AGENT_STEPS", "20"))
 MAX_AGENT_RETRIES = int(os.getenv("MAX_AGENT_RETRIES", "2"))
+
+# --- Web search (Step 3 investigation) ---
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 
 # --- LangSmith observability ---
 LANGCHAIN_TRACING_V2 = _as_bool(os.getenv("LANGCHAIN_TRACING_V2"))
