@@ -66,6 +66,50 @@ class ShortTermMemory(TypedDict, total=False):
     patient_feedback: list
     clinical_review: list
 
+    # Step 4 - patient adaptation & clinical review outputs.
+    patient_key_points: list
+    patient_friendly_explanation: str
+    patient_recommended_actions: list
+    patient_explanation_reading_level: str
+    patient_explanation_previous: str
+    patient_appropriateness_passed: bool
+    patient_appropriateness_score: float
+    patient_appropriateness_issues: list
+    patient_appropriateness_suggestions: list
+    clinical_review_passed: bool
+    clinical_score: float
+    clinical_review_assessment: str
+    clinical_review_inconsistencies: list
+    clinical_review_unsupported_claims: list
+    clinical_review_missing_safety_points: list
+    clinical_review_attempts: int
+
+    # Step 5 - learning layer (Compliance / Reflection / Knowledge Curator).
+    # 5.1 Compliance PII Agent
+    sanitized_case: dict
+    reidentification_risk: list
+    reidentification_risk_score: float
+    compliance_notes: list
+    compliance_approved: bool
+    compliance_reviewed: bool
+    # 5.3 Reflection Agent
+    agent_scores: list
+    reflection_average: float
+    reflection_threshold: float
+    reflection_flagged: list
+    reflection_findings: list
+    reflection_approved: bool
+    reflection_done: bool
+    reflection_evaluation_id: str
+    # 5.2 Knowledge Curator Agent
+    knowledge_candidate: dict
+    knowledge_novelty_score: float
+    curator_approved: bool
+    knowledge_committed: bool
+    knowledge_decision_reason: str
+    knowledge_curation_done: bool
+    curated_knowledge_id: str
+
     # Long-term memory injected for agents to read.
     long_term_context: list
 
@@ -141,6 +185,43 @@ def empty_short_term(
         patient_explanation="",
         patient_feedback=[],
         clinical_review=[],
+        patient_key_points=[],
+        patient_friendly_explanation="",
+        patient_recommended_actions=[],
+        patient_explanation_reading_level="",
+        patient_explanation_previous="",
+        patient_appropriateness_passed=False,
+        patient_appropriateness_score=0.0,
+        patient_appropriateness_issues=[],
+        patient_appropriateness_suggestions=[],
+        clinical_review_passed=False,
+        clinical_score=0.0,
+        clinical_review_assessment="",
+        clinical_review_inconsistencies=[],
+        clinical_review_unsupported_claims=[],
+        clinical_review_missing_safety_points=[],
+        clinical_review_attempts=0,
+        sanitized_case={},
+        reidentification_risk=[],
+        reidentification_risk_score=0.0,
+        compliance_notes=[],
+        compliance_approved=False,
+        compliance_reviewed=False,
+        agent_scores=[],
+        reflection_average=0.0,
+        reflection_threshold=0.0,
+        reflection_flagged=[],
+        reflection_findings=[],
+        reflection_approved=False,
+        reflection_done=False,
+        reflection_evaluation_id="",
+        knowledge_candidate={},
+        knowledge_novelty_score=0.0,
+        curator_approved=False,
+        knowledge_committed=False,
+        knowledge_decision_reason="",
+        knowledge_curation_done=False,
+        curated_knowledge_id="",
         long_term_context=[],
         next_agent=None,
         needs_orchestrator=False,

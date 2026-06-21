@@ -45,7 +45,17 @@ STEP_4_ORDER = [
     ("4.3 Clinical Review Agent", "clinical_review_assessment"),
 ]
 
-FOUNDATION_ORDER = STEP_2_ORDER + STEP_4_ORDER
+# Step 5 (learning layer) runs last, in 5.1 -> 5.3 -> 5.2 order so that
+# Compliance and Reflection set their approval flags before the Knowledge
+# Curator's consensus-gated commit. Each key is an always-truthy "done" marker
+# the agent sets on completion, which guarantees the heuristic terminates.
+STEP_5_ORDER = [
+    ("5.1 Compliance PII Agent", "compliance_reviewed"),
+    ("5.3 Reflection Agent", "reflection_done"),
+    ("5.2 Knowledge Curator Agent", "knowledge_curation_done"),
+]
+
+FOUNDATION_ORDER = STEP_2_ORDER + STEP_4_ORDER + STEP_5_ORDER
 AVAILABLE_AGENTS = [a for a, _ in FOUNDATION_ORDER] + sorted(STEP_3_AGENTS)
 
 
@@ -96,6 +106,10 @@ def _heuristic_next(state: dict) -> str:
             return step_3
 
     for agent_id, key in STEP_4_ORDER:
+        if not short_term_memory.has_content(state, key):
+            return agent_id
+
+    for agent_id, key in STEP_5_ORDER:
         if not short_term_memory.has_content(state, key):
             return agent_id
 

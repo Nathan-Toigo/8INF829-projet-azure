@@ -54,6 +54,18 @@ RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 MAX_AGENT_STEPS = int(os.getenv("MAX_AGENT_STEPS", "20"))
 MAX_AGENT_RETRIES = int(os.getenv("MAX_AGENT_RETRIES", "2"))
 
+# --- Step 5 learning layer thresholds ---
+# Reflection (5.3): below-threshold agents are flagged. <=0 => use the run's
+# average score as the threshold.
+REFLECTION_SCORE_THRESHOLD = float(os.getenv("REFLECTION_SCORE_THRESHOLD", "0"))
+# Knowledge Curator (5.2): minimum novelty (1 - max similarity) required to
+# consider a case worth curating.
+KNOWLEDGE_NOVELTY_THRESHOLD = float(os.getenv("KNOWLEDGE_NOVELTY_THRESHOLD", "0.35"))
+# Compliance (5.1): max acceptable reidentification risk score for approval.
+REIDENTIFICATION_RISK_THRESHOLD = float(
+    os.getenv("REIDENTIFICATION_RISK_THRESHOLD", "0.5")
+)
+
 # --- Web search (Step 3 investigation) ---
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 

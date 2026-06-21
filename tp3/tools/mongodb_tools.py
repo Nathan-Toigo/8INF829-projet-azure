@@ -30,6 +30,8 @@ COLLECTIONS = [
     "agent_runs",
     "audit_events",
     "memory_snapshots",
+    "agent_evaluations",
+    "curated_knowledge",
 ]
 
 
@@ -69,6 +71,10 @@ def ensure_indexes() -> None:
         collection("care_plans").create_index([("patientId", ASCENDING)])
         collection("agent_runs").create_index([("patientId", ASCENDING)])
         collection("memory_snapshots").create_index([("runId", ASCENDING)])
+        collection("agent_evaluations").create_index([("patientId", ASCENDING)])
+        collection("agent_evaluations").create_index([("runId", ASCENDING)])
+        collection("curated_knowledge").create_index([("patientId", ASCENDING)])
+        collection("curated_knowledge").create_index([("runId", ASCENDING)])
     except Exception:
         pass
 
@@ -177,3 +183,53 @@ def insert_audit_event(event: dict) -> str:
 def insert_memory_snapshot(snapshot: dict) -> str:
     snapshot = {**snapshot, "createdAt": snapshot.get("createdAt") or _now()}
     return str(collection("memory_snapshots").insert_one(snapshot).inserted_id)
+
+
+# --- agent_evaluations (5.3 Reflection Agent) -------------------------------
+
+def insert_agent_evaluation(evaluation: dict) -> str:
+    """Persist ONE reflection log per run: all agent scores, flagged agents,
+    root causes, and improvement ideas."""
+    evaluation = {**evaluation, "createdAt": evaluation.get("createdAt") or _now()}
+    return str(collection("agent_evaluations").insert_one(evaluation).inserted_id)
+
+
+def list_agent_evaluations(patient_id: str | None = None, limit: int = 100) -> list[dict]:
+    query: dict[str, Any] = {}
+    if patient_id:
+        query["patientId"] = patient_id
+    cur = (
+        collection("agent_evaluations")
+        .find(query)
+        .sort("createdAt", -1)
+        .limit(limit)
+    )
+    return [_clean(d) for d in cur]
+
+
+def latest_agent_evaluation(patient_id: str | None = None) -> dict | None:
+    query: dict[str, Any] = {"patientId": patient_id} if patient_id else {}
+    return _clean(
+        collection("agent_evaluations").find_one(query, sort=[("createdAt", -1)])
+    )
+
+
+# --- curated_knowledge (5.2 Knowledge Curator Agent) ------------------------
+
+def insert_curated_knowledge(record: dict) -> str:
+    """Insert the approved, de-identified knowledge as the system of record."""
+    record = {**record, "createdAt": record.get("createdAt") or _now()}
+    return str(collection("curated_knowledge").insert_one(record).inserted_id)
+
+
+def list_curated_knowledge(patient_id: str | None = None, limit: int = 100) -> list[dict]:
+    query: dict[str, Any] = {}
+    if patient_id:
+        query["patientId"] = patient_id
+    cur = (
+        collection("curated_knowledge")
+        .find(query)
+        .sort("createdAt", -1)
+        .limit(limit)
+    )
+    return [_clean(d) for d in cur]
