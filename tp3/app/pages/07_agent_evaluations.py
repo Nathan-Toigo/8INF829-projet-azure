@@ -104,6 +104,38 @@ for ev in evaluations:
         else:
             st.caption("No agents were flagged for this run.")
 
+        st.markdown("**Agent final outputs (working memory)**")
+        run_id = ev.get("runId")
+        run_doc = None
+        if run_id:
+            try:
+                run_doc = mongodb_tools.get_agent_run(run_id)
+            except Exception:
+                run_doc = None
+        outputs = (run_doc or {}).get("agentOutputs", []) or []
+        if outputs:
+            st.caption(
+                f"{len(outputs)} logged step(s) for run {run_id}."
+            )
+            for entry in outputs:
+                icon = {"completed": "✅", "blocked": "⛔", "error": "❌"}.get(
+                    entry.get("status"), "•"
+                )
+                with st.expander(
+                    f"step {entry.get('step')}: {icon} {entry.get('agent_id')}"
+                ):
+                    st.caption(entry.get("handoff_reason", ""))
+                    payload = entry.get("output") or {}
+                    if payload:
+                        st.json(payload)
+                    else:
+                        st.caption("No memory updates produced by this agent.")
+        else:
+            st.caption(
+                "No agent outputs found for this run "
+                "(run the workflow after this update to capture them)."
+            )
+
         baseline = ev.get("baseline")
         if baseline:
             with st.popover("Baseline (final answer used as reference)"):

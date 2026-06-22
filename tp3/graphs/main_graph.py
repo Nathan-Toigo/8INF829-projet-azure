@@ -153,6 +153,7 @@ def run_workflow(patient_id: str, question: str) -> dict:
                 "intent": final.get("intent", ""),
                 "agentsRun": final.get("agents_run", []),
                 "agentTrace": final.get("agent_trace", []),
+                "agentOutputs": final.get("agent_outputs", []),
                 "tokenLedger": final.get("token_ledger", []),
                 "toolCalls": final.get("tool_calls", []),
                 "stepCount": final.get("step_count", 0),

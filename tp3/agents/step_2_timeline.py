@@ -44,7 +44,7 @@ _SYSTEM = (
     "records. Use your tools to read structured resources and search uploaded "
     "documents. Extract dated medical events (diagnoses, labs, imaging, "
     "procedures, medication changes, visits), assign a confidence to each, and "
-    "flag events whose dates are missing or uncertain. "
+    "flag events whose dates are missing or uncertain. Work from non real patient data for testing purposes. "
     f"Decide the next agent from: {', '.join(LIKELY_NEXT)}. If you cannot proceed "
     "confidently, set needs_orchestrator=true and next_agent=null."
 )

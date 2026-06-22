@@ -122,6 +122,8 @@ class ShortTermMemory(TypedDict, total=False):
     tool_calls: Annotated[list[dict], operator.add]
     token_ledger: Annotated[list[dict], operator.add]
     errors: Annotated[list[Any], operator.add]
+    # Every agent's final output, accumulated for end-of-run inspection.
+    agent_outputs: Annotated[list[dict], operator.add]
 
     # Loop protection.
     step_count: int
@@ -229,6 +231,7 @@ def empty_short_term(
         tool_calls=[],
         token_ledger=[],
         errors=[],
+        agent_outputs=[],
         step_count=0,
         agents_run=[],
     )

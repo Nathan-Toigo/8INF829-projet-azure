@@ -51,8 +51,11 @@ UPLOADS_DIR = Path(os.getenv("UPLOADS_DIR", ROOT / "uploads")).resolve()
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 # --- Agent loop protection (spec section 13) ---
-MAX_AGENT_STEPS = int(os.getenv("MAX_AGENT_STEPS", "20"))
+MAX_AGENT_STEPS = int(os.getenv("MAX_AGENT_STEPS", "40"))
 MAX_AGENT_RETRIES = int(os.getenv("MAX_AGENT_RETRIES", "2"))
+# After this many steps the orchestrator stops iterating and forces forward
+# progression through the steps until Step 5 is complete (<=0 disables).
+FORCE_PROGRESSION_AFTER_STEPS = int(os.getenv("FORCE_PROGRESSION_AFTER_STEPS", "10"))
 
 # --- Step 5 learning layer thresholds ---
 # Reflection (5.3): below-threshold agents are flagged. <=0 => use the run's

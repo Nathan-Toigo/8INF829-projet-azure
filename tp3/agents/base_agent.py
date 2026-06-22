@@ -100,6 +100,18 @@ class BaseAgent:
             "step": state.get("step_count", 0) + 1,
         }
 
+        # Every agent logs its final output to working memory so the full run is
+        # inspectable at the end (e.g. on the Agent Evaluations page).
+        output_entry = {
+            "agent_id": response.agent_id,
+            "step": state.get("step_count", 0) + 1,
+            "status": response.status,
+            "handoff_reason": response.handoff_reason,
+            "next_agent": response.next_agent,
+            "needs_orchestrator": response.needs_orchestrator,
+            "output": response.memory_updates,
+        }
+
         update: dict = {}
         update.update(response.memory_updates)
         update["long_term_context"] = long_term_context
@@ -109,6 +121,7 @@ class BaseAgent:
         update["tool_calls"] = tool_records
         update["token_ledger"] = token_records
         update["errors"] = response.errors
+        update["agent_outputs"] = [output_entry]
         update["step_count"] = state.get("step_count", 0) + 1
         update["agents_run"] = state.get("agents_run", []) + [self.AGENT_ID]
 

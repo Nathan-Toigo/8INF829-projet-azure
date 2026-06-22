@@ -171,6 +171,10 @@ def latest_agent_run(patient_id: str) -> dict | None:
     )
 
 
+def get_agent_run(run_id: str) -> dict | None:
+    return _clean(collection("agent_runs").find_one({"runId": run_id}))
+
+
 # --- audit_events -----------------------------------------------------------
 
 def insert_audit_event(event: dict) -> str:
